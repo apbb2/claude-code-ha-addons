@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.12] - 2026-05-21
+
+### Fixed
+- Characters overlaying each other on narrow screens (tablets, small browser windows). The `stty cols 220` calls were forcing Claude Code to render its TUI at 220 columns regardless of actual window width — on narrower devices this caused output to wrap and overlap. Removed all forced-width overrides (`COLUMNS=220`, `stty cols 220` in the wrapper, and the startup stty). The terminal now always uses the actual window width reported by ttyd.
+
 ## [2.3.11] - 2026-05-21
 
 ### Fixed

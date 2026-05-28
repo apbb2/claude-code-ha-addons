@@ -120,7 +120,6 @@ EOF
 RUN cat > /root/.bashrc << 'EOF'
 export TERM=xterm-256color
 export LANG=C.UTF-8
-export COLUMNS=220
 export PATH="/homeassistant/.claudecode/npm-global/bin:/root/.local/bin:$PATH"
 PS1='\[\033[1;36m\]claude-code\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ '
 
@@ -132,9 +131,8 @@ update_mcp_token() {
   fi
 }
 
-# Wrapper: set PTY width and intercept `claude update` (built-in updater fails on read-only image layer)
+# Wrapper: intercept `claude update` (built-in updater fails on read-only image layer)
 claude() {
-    stty cols 220 2>/dev/null
     if [ "$1" = "update" ]; then
         echo "Updating Claude Code via add-on method (npm --prefix)..."
         npm install -g @anthropic-ai/claude-code@latest \
@@ -159,8 +157,6 @@ EOF
 # Create update notification script and wire into .bashrc
 RUN echo '[ -f /homeassistant/.claudecode/.update_notice ] && echo -e "\033[1;33m[UPDATE AVAILABLE]\033[0m Claude Code $(cat /homeassistant/.claudecode/.update_notice) available - restart the add-on or run: claude-update"' > /root/.claude-notify.sh
 RUN echo 'source /root/.claude-notify.sh' >> /root/.bashrc
-# Set PTY width so Node.js apps (like Claude Code) read 220 cols via ioctl, not just the COLUMNS shell var
-RUN echo 'stty cols 220 rows 50 2>/dev/null || true' >> /root/.bashrc
 
 # Ensure .bashrc is sourced for login shells too
 RUN echo 'source ~/.bashrc' > /root/.profile
