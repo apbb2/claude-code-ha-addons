@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.13] - 2026-05-21
+
+### Changed
+- Rebuild to bundle latest Claude Code release.
+
 ## [2.3.12] - 2026-05-21
 
 ### Fixed
