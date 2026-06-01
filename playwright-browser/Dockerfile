@@ -1,5 +1,9 @@
-ARG BUILD_FROM
-FROM ${BUILD_FROM}
+# Build directly on the official Playwright image (Ubuntu Noble).
+# It ships Chromium in /ms-playwright/ (required by run.sh) and has apt-get.
+# NOTE: hardcoded instead of using BUILD_FROM/build.yaml because the HA
+# Supervisor's build_from regex rejects single-segment image paths like
+# "mcr.microsoft.com/playwright", silently falling back to the Alpine base.
+FROM mcr.microsoft.com/playwright:v1.57.0-noble
 
 # Labels
 LABEL maintainer="Robson Felix"
