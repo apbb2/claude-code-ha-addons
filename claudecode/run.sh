@@ -88,6 +88,17 @@ rm -f "$PERSIST_DIR/local-bin/claude" 2>/dev/null || true
 rm -rf /root/.local/share/claude 2>/dev/null || true
 rm -rf "$PERSIST_DIR/local-share-claude" 2>/dev/null || true
 
+# CPU compatibility check — Claude Code uses Bun which requires SSE4.2 (Intel 2009+ / AMD 2011+)
+if ! grep -qw sse4_2 /proc/cpuinfo 2>/dev/null; then
+    echo "[WARN] ============================================================"
+    echo "[WARN] CPU INCOMPATIBILITY DETECTED"
+    echo "[WARN] This CPU does not support SSE4.2 instructions required by"
+    echo "[WARN] Claude Code (which runs on Bun). Claude Code will crash."
+    echo "[WARN] Minimum hardware: Intel Nehalem (2009) or AMD Bulldozer (2011)."
+    echo "[WARN] The terminal will still start so you can see this message."
+    echo "[WARN] ============================================================"
+fi
+
 # Report active version (npm-global/bin is first in PATH, so updated version is used automatically)
 if [ -f "$NPM_GLOBAL_DIR/bin/claude" ]; then
     echo "[INFO] Using npm-updated Claude Code: $(claude --version 2>/dev/null)"
@@ -142,7 +153,7 @@ claude mcp remove homeassistant -s user 2>/dev/null || true
 claude mcp remove playwright -s user 2>/dev/null || true
 
 if [ "$ENABLE_MCP" = "true" ]; then
-    claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user
+    claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user || true
     SETTINGS_FILE=/root/.claude/settings.json
     ALLOWED_TOOLS='[
       "mcp__homeassistant__get_version",
@@ -177,7 +188,7 @@ fi
 if [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
     claude mcp add-json playwright \
         '{"command":"npx","args":["--no-install","@playwright/mcp","--cdp-endpoint","http://'"$PLAYWRIGHT_HOST"':9222"]}' \
-        -s user
+        -s user || true
     echo "[INFO] Playwright MCP enabled (CDP: http://${PLAYWRIGHT_HOST}:9222)"
     echo '[INFO] Make sure the Playwright Browser add-on is installed and running'
 else

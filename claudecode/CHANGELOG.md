@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.14] - 2026-05-21
+
+### Fixed
+- Add-on crashed on startup with "Illegal instruction" on older CPUs. Claude Code now uses Bun as its runtime, which requires SSE4.2 CPU instructions (Intel Nehalem 2009+ / AMD Bulldozer 2011+). Added a CPU check at startup that prints a clear warning when SSE4.2 is missing. Also added `|| true` to all `claude mcp add-json` calls (they were missing it unlike the `remove` calls) so the terminal always starts even when claude commands crash, giving users a visible error instead of a silent restart loop.
+
 ## [2.3.13] - 2026-05-21
 
 ### Changed
