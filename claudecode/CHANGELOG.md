@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.15] - 2026-05-21
+
+### Changed
+- Improved CPU incompatibility warning to specifically mention Proxmox users: the default `kvm64` VM CPU type strips SSE4.2 instructions; fix is to change CPU type to `host` in VM hardware settings.
+- Added Proxmox troubleshooting section to README.
+- Fixed model list in README (updated to `claude-opus-4-7`).
+
 ## [2.3.14] - 2026-05-21
 
 ### Fixed

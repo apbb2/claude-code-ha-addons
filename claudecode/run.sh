@@ -95,6 +95,8 @@ if ! grep -qw sse4_2 /proc/cpuinfo 2>/dev/null; then
     echo "[WARN] This CPU does not support SSE4.2 instructions required by"
     echo "[WARN] Claude Code (which runs on Bun). Claude Code will crash."
     echo "[WARN] Minimum hardware: Intel Nehalem (2009) or AMD Bulldozer (2011)."
+    echo "[WARN] Running on Proxmox? Change VM CPU type from 'kvm64' to 'host'"
+    echo "[WARN] in the VM hardware settings to expose real CPU capabilities."
     echo "[WARN] The terminal will still start so you can see this message."
     echo "[WARN] ============================================================"
 fi

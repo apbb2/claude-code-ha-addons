@@ -109,7 +109,7 @@ Three models are available:
 | Model | Best for |
 |-------|----------|
 | `claude-sonnet-4-6` | Best balance of speed and capability (default) |
-| `claude-opus-4-6` | Most powerful, for complex tasks |
+| `claude-opus-4-7` | Most powerful, for complex tasks |
 | `claude-haiku-4-5-20251001` | Fastest, for simple queries |
 
 Enable `auto_update_claude` to ensure new models become available as Anthropic releases them, without needing an add-on update.
@@ -208,6 +208,19 @@ If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL wit
 - The add-on runs in an isolated container
 
 ## Troubleshooting
+
+### "Illegal instruction" crash / add-on won't start (Proxmox users)
+
+Claude Code uses [Bun](https://bun.sh/) as its runtime, which requires SSE4.2 CPU instructions (Intel Nehalem 2009+ / AMD Bulldozer 2011+).
+
+**Proxmox VMs:** The default CPU type `kvm64` is a minimal baseline that strips out these instructions even if your host CPU supports them. Fix:
+
+1. Shut down the HA VM
+2. Go to **Hardware → Processors → Type**
+3. Change from `kvm64` to **`host`** (passes through all real CPU capabilities)
+4. Start the VM
+
+Other CPU types that include SSE4.2 also work (e.g. `Haswell`, `Skylake-Client`). The add-on startup log will show a clear warning if the CPU is incompatible.
 
 ### Authentication issues
 
