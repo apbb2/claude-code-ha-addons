@@ -46,7 +46,7 @@ configuration:
     name: Claude Model
     description: >-
       The Claude model to use. claude-sonnet-4-6 offers the best balance of speed
-      and capability. claude-opus-4-6 is the most powerful. claude-haiku-4-5-20251001
+      and capability. claude-opus-4-7 is the most powerful. claude-haiku-4-5-20251001
       is the fastest. Auto-update Claude Code (above) ensures new models become
       available without an add-on update.
 

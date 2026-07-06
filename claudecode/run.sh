@@ -10,7 +10,8 @@ export PATH="$NPM_GLOBAL_DIR/bin:$PATH"
 
 mkdir -p "$PERSIST_DIR/config" "$NPM_GLOBAL_DIR" /root/.config
 
-# Write CLAUDE.md for Claude's context
+# Write CLAUDE.md for Claude's context — only if missing, so user edits via /memory survive restarts
+if [ ! -f "$PERSIST_DIR/CLAUDE.md" ]; then
 cat > "$PERSIST_DIR/CLAUDE.md" << 'CLAUDEMD'
 # Claude Code - Home Assistant Add-on
 
@@ -69,6 +70,7 @@ logger:
 
 **Key insight:** `_LOGGER.debug()` calls are invisible unless the logger level is set to debug. Use `_LOGGER.info()` or `_LOGGER.warning()` for logs that should always appear.
 CLAUDEMD
+fi
 
 # Persistence symlinks — keep Claude auth and config across container rebuilds
 [ ! -L /root/.claude ] && { rm -rf /root/.claude; ln -s "$PERSIST_DIR" /root/.claude; }
@@ -89,7 +91,10 @@ rm -rf /root/.local/share/claude 2>/dev/null || true
 rm -rf "$PERSIST_DIR/local-share-claude" 2>/dev/null || true
 
 # CPU compatibility check — Claude Code uses Bun which requires SSE4.2 (Intel 2009+ / AMD 2011+)
-if ! grep -qw sse4_2 /proc/cpuinfo 2>/dev/null; then
+# Only applies to x86; ARM cpuinfo has no sse4_2 flag and would false-positive
+CPU_ARCH=$(uname -m)
+if { [ "$CPU_ARCH" = "x86_64" ] || [ "$CPU_ARCH" = "i686" ] || [ "$CPU_ARCH" = "i386" ]; } \
+    && ! grep -qw sse4_2 /proc/cpuinfo 2>/dev/null; then
     echo "[WARN] ============================================================"
     echo "[WARN] CPU INCOMPATIBILITY DETECTED"
     echo "[WARN] This CPU does not support SSE4.2 instructions required by"
@@ -132,12 +137,12 @@ fi
 AUTO_UPDATE=$(jq -r '.auto_update_claude // true' /data/options.json)
 if [ "$AUTO_UPDATE" = "true" ]; then
     CURRENT_VER=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    LATEST_VER=$(npm show @anthropic-ai/claude-code version 2>/dev/null)
+    LATEST_VER=$(timeout 30 npm show @anthropic-ai/claude-code version 2>/dev/null) || LATEST_VER=""
     if [ -n "$LATEST_VER" ] && [ -n "$CURRENT_VER" ] && [ "$CURRENT_VER" != "$LATEST_VER" ]; then
         echo "[INFO] Updating Claude Code from $CURRENT_VER to $LATEST_VER..."
         # Install into the writable persisted prefix — avoids read-only Docker layer restriction
         # that blocks `claude update` (which tries to update the npm global in /usr/local)
-        npm install -g "@anthropic-ai/claude-code@$LATEST_VER" \
+        timeout 300 npm install -g "@anthropic-ai/claude-code@$LATEST_VER" \
             --prefix "$NPM_GLOBAL_DIR" --no-fund --no-audit 2>&1 || true
         echo "[INFO] Claude Code update complete: $(claude --version 2>/dev/null)"
     else
@@ -154,9 +159,20 @@ echo "[INFO] Using Claude model: $MODEL"
 claude mcp remove homeassistant -s user 2>/dev/null || true
 claude mcp remove playwright -s user 2>/dev/null || true
 
+# Ensure settings.json exists so jq merges below work on fresh installs
+SETTINGS_FILE=/root/.claude/settings.json
+[ -s "$SETTINGS_FILE" ] || echo '{}' > "$SETTINGS_FILE"
+
+# Scrub Supervisor token persisted by older add-on versions (kept secrets out of HA backups).
+# hass-mcp reads HA_TOKEN from the environment (exported above); nothing reads this key.
+if jq -e '.mcpServers.homeassistant.env.HASS_TOKEN?' "$SETTINGS_FILE" >/dev/null 2>&1; then
+    jq 'del(.mcpServers.homeassistant.env.HASS_TOKEN)' "$SETTINGS_FILE" > /tmp/settings.tmp \
+        && mv /tmp/settings.tmp "$SETTINGS_FILE"
+    echo '[INFO] Removed legacy token from persisted settings'
+fi
+
 if [ "$ENABLE_MCP" = "true" ]; then
     claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user || true
-    SETTINGS_FILE=/root/.claude/settings.json
     ALLOWED_TOOLS='[
       "mcp__homeassistant__get_version",
       "mcp__homeassistant__get_entity",
@@ -178,9 +194,6 @@ if [ "$ENABLE_MCP" = "true" ]; then
     jq --argjson tools "$ALLOWED_TOOLS" \
         '.permissions.allow = ($tools + (.permissions.allow // []) | unique)' \
         "$SETTINGS_FILE" > /tmp/settings.tmp && mv /tmp/settings.tmp "$SETTINGS_FILE"
-    jq --arg token "$SUPERVISOR_TOKEN" \
-        '.mcpServers.homeassistant.env.HASS_TOKEN = $token' \
-        "$SETTINGS_FILE" > /tmp/settings.tmp && mv /tmp/settings.tmp "$SETTINGS_FILE"
     echo '[INFO] MCP configured with Home Assistant integration'
     echo '[INFO] Pre-authorized read-only MCP tools'
 else
@@ -188,9 +201,9 @@ else
 fi
 
 if [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
-    claude mcp add-json playwright \
-        '{"command":"npx","args":["--no-install","@playwright/mcp","--cdp-endpoint","http://'"$PLAYWRIGHT_HOST"':9222"]}' \
-        -s user || true
+    PW_CONFIG=$(jq -cn --arg url "http://${PLAYWRIGHT_HOST}:9222" \
+        '{command:"npx",args:["--no-install","@playwright/mcp","--cdp-endpoint",$url]}')
+    claude mcp add-json playwright "$PW_CONFIG" -s user || true
     echo "[INFO] Playwright MCP enabled (CDP: http://${PLAYWRIGHT_HOST}:9222)"
     echo '[INFO] Make sure the Playwright Browser add-on is installed and running'
 else
@@ -234,8 +247,10 @@ fi
     sleep 3600
 done) &
 
-# Start web terminal
-cd /homeassistant
+# Start web terminal in the configured working directory
+WORKDIR=$(jq -r --arg d /homeassistant '.working_directory // $d' /data/options.json)
+[ -d "$WORKDIR" ] || { echo "[WARN] working_directory '$WORKDIR' not found, using /homeassistant"; WORKDIR=/homeassistant; }
+cd "$WORKDIR"
 exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
     -t fontSize="$FONT_SIZE" \
     -t fontFamily=Monaco,Consolas,monospace \

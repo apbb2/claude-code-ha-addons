@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.16] - 2026-05-21
+
+### Security
+- Supervisor token is no longer written to `settings.json` on disk (it was persisted into `/homeassistant/.claudecode/`, which is included in HA backups). The token key was dead code — hass-mcp reads `HA_TOKEN` from the environment, which the add-on already exports. Existing persisted tokens are scrubbed once on startup.
+- Removed the `update_mcp_token` shell function, which re-wrote the token on every `c`/`cc` alias use and interpolated it unescaped into a jq filter.
+- Playwright MCP config is now built with `jq -n --arg` instead of shell string splicing.
+
+### Fixed
+- CPU incompatibility warning no longer false-positives on all ARM devices (Raspberry Pi etc.) — the SSE4.2 check now only runs on x86 hardware.
+- Pre-authorized MCP tool permissions were silently never applied on fresh installs (`settings.json` didn't exist yet, so the jq merge failed). The file is now bootstrapped with `{}` first.
+- The `working_directory` config option is now actually honored — it previously existed in the config schema but was ignored.
+- Startup can no longer hang indefinitely on a slow npm registry — version check and update install now have 30s/300s timeouts.
+- `CLAUDE.md` context file is only written when missing, so user edits via `/memory` survive add-on restarts.
+
+### Changed
+- `claude-update` alias now delegates to the `claude update` wrapper — one update code path instead of two duplicates.
+- README: rewrote copy/paste and scrolling docs to match current behavior (tmux mouse mode is off; browser handles selection natively); fixed support links to point at this fork; updated model name in translations.
+
 ## [2.3.15] - 2026-05-21
 
 ### Changed

@@ -148,52 +148,35 @@ If you're new to tmux:
 | Key | Action |
 |-----|--------|
 | `Ctrl+b d` | Detach from session (keeps it running) |
-| `Ctrl+b [` | Enter scroll/copy mode (use arrow keys) |
-| Mouse wheel | Scroll up/down (auto-enters copy mode) |
-| `q` | Exit scroll/copy mode |
+| `Ctrl+b [` | Enter scroll/copy mode (use arrow keys, `q` to exit) |
 
-### Copy and Paste in tmux
+### Copy and Paste
 
-Since tmux captures mouse events, copy/paste works differently:
+tmux mouse mode is disabled, so the browser handles selection natively:
 
 | Action | How to do it |
 |--------|--------------|
-| **Copy** | Hold `Ctrl+Shift` while selecting text with mouse |
-| **Paste** | `Shift+Insert` or middle-click |
-| **Alternative paste** | `Ctrl+Shift+V` (browser dependent) |
-
-**Note**: Regular right-click paste and simple mouse selection won't work because tmux intercepts these events for scrolling.
+| **Copy** | Select text with the mouse, then `Ctrl+C` / `Cmd+C` |
+| **Paste** | `Ctrl+V` / `Cmd+V` or `Shift+Insert` |
+| **Scroll** | Mouse wheel or touch (works on tablets) |
 
 #### Authenticating Claude Code (first launch)
 
-The authentication URL is displayed on a single line for easy clicking.
-
-1. **Click the link** — it should open in a new tab
+1. **Click the authentication link** — it should open in a new tab (on narrow windows the URL may wrap; if clicking doesn't work, select and copy it into your browser)
 2. Complete authentication in the browser and **copy the auth code**
-3. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
+3. Click back on the terminal and **paste** the code
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+### Session Persistence Trade-offs
 
-### Scrolling and Session Persistence Trade-offs
-
-**With tmux (`session_persistence: true`):**
+**With tmux (`session_persistence: true`, default):**
 - ✅ Session survives browser refresh/disconnect
 - ✅ Can detach and reattach to running sessions
 - ✅ Long-running Claude tasks continue in background
-- ✅ Mouse wheel scrolling works (enters copy mode automatically)
-- ✅ 20,000 line scrollback buffer
-- ⚠️ Use middle-click or Shift+Insert to paste (right-click paste may not work)
+- ✅ Native browser scrolling, copy, and paste
 
 **Without tmux (`session_persistence: false`):**
-- ✅ Native browser scrolling
 - ✅ Simpler terminal behavior
-- ✅ Standard copy/paste behavior
 - ❌ Session lost on browser refresh
-- ❌ Session lost if add-on restarts
-
-**Recommendation:**
-- Use `session_persistence: true` (default) if you run long tasks or need to survive disconnects
-- Use `session_persistence: false` if you need standard copy/paste behavior
 
 ## Security
 
@@ -229,7 +212,7 @@ Claude Code manages its own authentication. If you have issues:
 2. Follow the prompts to log in or enter your API key
 3. Credentials are saved automatically for future sessions
 
-**Can't copy the URL or paste the auth code?** The terminal uses tmux, which changes how copy/paste works. See [Copy and Paste in tmux](#copy-and-paste-in-tmux) for instructions.
+**Can't copy the URL or paste the auth code?** See [Copy and Paste](#copy-and-paste) — selection and paste work natively in the browser.
 
 ### hass-mcp not working
 
@@ -257,5 +240,5 @@ After changing configuration:
 
 ## Support
 
-- [GitHub Issues](https://github.com/robsonfelix/robsonfelix-hass-addons/issues)
+- [GitHub Issues](https://github.com/apbb2/robsonfelix-hass-addons/issues)
 - [Home Assistant Community](https://community.home-assistant.io/)
