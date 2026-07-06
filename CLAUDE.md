@@ -26,10 +26,9 @@ This file contains instructions for Claude Code when working on this repository.
 
 ## Version Bumping
 
-When making changes that require a new release:
-1. Update version in `claudecode/config.yaml`
-2. Add entry to `claudecode/CHANGELOG.md`
-3. Commit and push
+Use `./release.sh <version> [section] "note" ["note" ...]` — it bumps the version, stamps the changelog with **today's date** (from `date`, never hand-written), commits, and pushes in one step.
+
+If editing the changelog manually instead, ALWAYS run `date +%Y-%m-%d` first and use its output — never copy the date from a previous entry.
 
 ## Home Assistant Add-on Notes
 
