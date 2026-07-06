@@ -5,7 +5,7 @@ FROM ${BUILD_FROM}
 LABEL maintainer="Robson Felix"
 LABEL org.opencontainers.image.title="Auto-Monocle for Home Assistant"
 LABEL org.opencontainers.image.description="Auto-discover HA cameras and expose to Alexa via Monocle Gateway"
-LABEL org.opencontainers.image.source="https://github.com/robsonfelix/robsonfelix-hass-addons"
+LABEL org.opencontainers.image.source="https://github.com/apbb2/claude-code-ha-addons"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install dependencies

@@ -8,7 +8,7 @@ LABEL io.hass.type="addon"
 LABEL io.hass.arch="amd64,aarch64"
 LABEL org.opencontainers.image.title="Playwright Browser for Home Assistant"
 LABEL org.opencontainers.image.description="Headless Chromium with CDP endpoint for browser automation"
-LABEL org.opencontainers.image.source="https://github.com/robsonfelix/robsonfelix-hass-addons"
+LABEL org.opencontainers.image.source="https://github.com/apbb2/claude-code-ha-addons"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # jq is already available in the Playwright image (Ubuntu-based)

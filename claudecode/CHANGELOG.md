@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2026-05-21
+
+### Changed
+- **Repository renamed** to [apbb2/claude-code-ha-addons](https://github.com/apbb2/claude-code-ha-addons). This fork has substantially rewritten the original add-on's startup, update, and security architecture, and now stands on its own. GitHub redirects the old URL, so existing installations continue to receive updates without any action.
+- All repository references, image labels, and support links updated to the new home. Maintainer is now apbb2; original work by Robson Felix remains credited in the LICENSE and README.
+- Version moves to 3.0.0 to mark the new identity. No functional changes beyond 2.3.16 — see below for the most recent fixes.
+
 ## [2.3.16] - 2026-05-21
 
 ### Security
