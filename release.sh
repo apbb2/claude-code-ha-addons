@@ -48,4 +48,16 @@ sed -n "/## \[$VERSION\]/,/^## \[/p" "$CHANGELOG" | sed '$d'
 git add "$CONFIG" "$CHANGELOG"
 git commit -m "v$VERSION: $1"
 git push
-echo "Released v$VERSION ($TODAY)"
+
+# Users can only install once the GHCR images exist — block until CI is green
+echo "Waiting for image build (GitHub Actions)..."
+sleep 10
+RUN_ID=$(gh run list --workflow=builder.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+if gh run watch "$RUN_ID" --exit-status; then
+    echo "CI green — v$VERSION images are live on ghcr.io. Released ($TODAY)."
+else
+    echo "CI FAILED — v$VERSION is pushed but images are NOT published." >&2
+    echo "Users who update now will get a pull error. Fix the build, then re-run:" >&2
+    echo "  gh run rerun $RUN_ID   (or push a fix commit)" >&2
+    exit 1
+fi
