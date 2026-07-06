@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-07-06
+
+### Changed
+- Add-on now ships pre-built images from GitHub Container Registry. The HA update dialog shows real download progress (the bar previously sat at 0% during the local Docker build), and installs are much faster since nothing compiles on your machine.
+- Dropped armv7, armhf, and i386 architectures — Claude Code's Bun runtime has no 32-bit builds, so the add-on could never run on them.
+- Rebuild bundles the latest Claude Code release.
+
 ## [3.0.1] - 2026-07-06
 
 ### Changed
