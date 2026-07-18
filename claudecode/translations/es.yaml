@@ -44,6 +44,22 @@ configuration:
     description: >-
       Verifica e instala automáticamente actualizaciones de Claude Code al iniciar el add-on.
       Mantiene Claude Code actualizado sin necesidad de actualizar la versión del add-on.
+  enable_remote_control:
+    name: Habilitar Control Remoto
+    description: >-
+      Inicia automáticamente Claude Code con Control Remoto habilitado en cada sesión.
+      Permite ver y controlar tu sesión local de Claude Code desde claude.ai/code
+      o la aplicación móvil de Claude. Requiere suscripción claude.ai Pro, Max, Team o
+      Enterprise (las claves de API no son compatibles). Nota de seguridad: este add-on
+      se ejecuta como root con acceso completo a tu servidor de Home Assistant, por lo
+      que cualquiera que pueda iniciar sesión en la cuenta de Claude vinculada podrá
+      controlarlo. Déjalo desactivado salvo que lo necesites.
+  remote_control_session_prefix:
+    name: Prefijo del Nombre de Sesión de Control Remoto
+    description: >-
+      Prefijo para los nombres de sesión de Control Remoto generados automáticamente,
+      visible en claude.ai/code y la aplicación móvil de Claude. El valor predeterminado
+      es "HomeAssistant", generando nombres como "HomeAssistant-graceful-unicorn". Solo aplica cuando el Control Remoto está habilitado.
   model:
     name: Modelo Claude
     description: >-

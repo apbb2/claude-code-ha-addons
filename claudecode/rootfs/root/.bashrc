@@ -11,7 +11,13 @@ claude() {
             --prefix /homeassistant/.claudecode/npm-global \
             --no-fund --no-audit 2>&1
         hash -r 2>/dev/null
-        echo "Done: $(command claude --version 2>/dev/null)"
+        if ! timeout 30 command claude --version </dev/null >/dev/null 2>&1; then
+            echo "Updated version fails to run on this system — rolling back to bundled version"
+            rm -rf /homeassistant/.claudecode/npm-global
+            mkdir -p /homeassistant/.claudecode/npm-global
+            hash -r 2>/dev/null
+        fi
+        echo "Done: $(timeout 30 command claude --version 2>/dev/null)"
         return 0
     fi
     command claude "$@"

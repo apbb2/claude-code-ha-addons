@@ -100,7 +100,15 @@ claude --continue
 | `working_directory` | Start directory | /homeassistant |
 | `session_persistence` | Use tmux for persistent sessions | true |
 | `auto_update_claude` | Auto-update Claude Code on startup | true |
+| `enable_remote_control` | Auto-start sessions with Remote Control (see below) | false |
+| `remote_control_session_prefix` | Session name prefix shown in claude.ai | HomeAssistant |
 | `model` | Claude model to use | claude-sonnet-4-6 |
+
+### Remote Control
+
+When `enable_remote_control` is on, every Claude Code session starts with [Remote Control](https://docs.anthropic.com/en/docs/claude-code) enabled, so you can view and steer it from **claude.ai/code** or the **Claude mobile app**. Requires a claude.ai Pro, Max, Team, or Enterprise subscription (API keys are not supported).
+
+> ⚠️ **Security note:** this add-on runs as root with full access to your Home Assistant host. With Remote Control enabled, anyone who can sign in to the linked Claude account can control it. Leave this off unless you need it.
 
 ### Model Selection
 

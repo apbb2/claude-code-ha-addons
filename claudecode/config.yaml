@@ -1,6 +1,6 @@
 name: Claude Code
 description: Run Claude Code AI assistant inside Home Assistant to create automations, debug issues, and manage your smart home configuration
-version: "3.1.0"
+version: "3.2.0"
 slug: claudecode
 url: https://github.com/apbb2/claude-code-ha-addons
 image: ghcr.io/apbb2/claudecode-{arch}
@@ -38,6 +38,8 @@ options:
   working_directory: /homeassistant
   session_persistence: true
   auto_update_claude: true
+  enable_remote_control: false
+  remote_control_session_prefix: HomeAssistant
   model: claude-sonnet-4-6
 schema:
   enable_mcp: bool
@@ -48,6 +50,8 @@ schema:
   working_directory: str
   session_persistence: bool
   auto_update_claude: bool
+  enable_remote_control: bool
+  remote_control_session_prefix: str
   model: list(claude-opus-4-7|claude-sonnet-4-6|claude-haiku-4-5-20251001)
 environment:
   TERM: xterm-256color

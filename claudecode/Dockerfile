@@ -53,7 +53,8 @@ RUN case "${BUILD_ARCH}" in \
         i386) TTYD_ARCH="i686" ;; \
         *) TTYD_ARCH="x86_64" ;; \
     esac && \
-    curl -fsSL "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
+    curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+        "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
     chmod +x /usr/bin/ttyd
 
 # Provide a passthrough sudo so Claude Code's postinstall script doesn't fail
@@ -90,15 +91,15 @@ RUN apk add --no-cache --virtual .build-deps \
 ENV NPM_CONFIG_CACHE=/root/.npm
 RUN npx @playwright/mcp --version || true
 
-# Install Home Assistant CLI (ha command)
+# Install Home Assistant CLI (ha command) — pinned for reproducible builds
+ARG HA_CLI_VERSION=5.2.0
 RUN case "${BUILD_ARCH}" in \
         amd64) HA_ARCH="amd64" ;; \
         aarch64) HA_ARCH="aarch64" ;; \
-        armv7|armhf) HA_ARCH="armhf" ;; \
-        i386) HA_ARCH="i386" ;; \
         *) HA_ARCH="amd64" ;; \
     esac && \
-    curl -fsSL "https://github.com/home-assistant/cli/releases/latest/download/ha_${HA_ARCH}" -o /usr/local/bin/ha && \
+    curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+        "https://github.com/home-assistant/cli/releases/download/${HA_CLI_VERSION}/ha_${HA_ARCH}" -o /usr/local/bin/ha && \
     chmod +x /usr/local/bin/ha
 
 # Create necessary directories (NOT /root/.claude - will be symlinked at runtime)

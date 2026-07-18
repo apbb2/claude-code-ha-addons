@@ -90,16 +90,18 @@ rm -f "$PERSIST_DIR/local-bin/claude" 2>/dev/null || true
 rm -rf /root/.local/share/claude 2>/dev/null || true
 rm -rf "$PERSIST_DIR/local-share-claude" 2>/dev/null || true
 
-# CPU compatibility check — Claude Code uses Bun which requires SSE4.2 (Intel 2009+ / AMD 2011+)
-# Only applies to x86; ARM cpuinfo has no sse4_2 flag and would false-positive
+# CPU compatibility check — Claude Code's Bun binary uses JavaScriptCore, which
+# requires AVX (not just SSE4.2). Without it claude HANGS rather than crashing,
+# which is why every claude call below is wrapped in timeout.
+# Only applies to x86; ARM cpuinfo has neither flag and would false-positive.
 CPU_ARCH=$(uname -m)
 if { [ "$CPU_ARCH" = "x86_64" ] || [ "$CPU_ARCH" = "i686" ] || [ "$CPU_ARCH" = "i386" ]; } \
-    && ! grep -qw sse4_2 /proc/cpuinfo 2>/dev/null; then
+    && ! grep -qw avx /proc/cpuinfo 2>/dev/null; then
     echo "[WARN] ============================================================"
     echo "[WARN] CPU INCOMPATIBILITY DETECTED"
-    echo "[WARN] This CPU does not support SSE4.2 instructions required by"
-    echo "[WARN] Claude Code (which runs on Bun). Claude Code will crash."
-    echo "[WARN] Minimum hardware: Intel Nehalem (2009) or AMD Bulldozer (2011)."
+    echo "[WARN] This CPU does not expose AVX instructions, required by"
+    echo "[WARN] Claude Code's runtime. Claude Code will hang or crash."
+    echo "[WARN] Minimum hardware: Intel Sandy Bridge (2011) / AMD Bulldozer (2011)."
     echo "[WARN] Running on Proxmox? Change VM CPU type from 'kvm64' to 'host'"
     echo "[WARN] in the VM hardware settings to expose real CPU capabilities."
     echo "[WARN] The terminal will still start so you can see this message."
@@ -108,7 +110,7 @@ fi
 
 # Report active version (npm-global/bin is first in PATH, so updated version is used automatically)
 if [ -f "$NPM_GLOBAL_DIR/bin/claude" ]; then
-    echo "[INFO] Using npm-updated Claude Code: $(claude --version 2>/dev/null)"
+    echo "[INFO] Using npm-updated Claude Code: $(timeout 30 claude --version 2>/dev/null)"
 fi
 
 # Read options from HA config
@@ -136,7 +138,7 @@ fi
 # Auto-update Claude Code on startup if enabled
 AUTO_UPDATE=$(jq -r '.auto_update_claude // true' /data/options.json)
 if [ "$AUTO_UPDATE" = "true" ]; then
-    CURRENT_VER=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    CURRENT_VER=$(timeout 30 claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     LATEST_VER=$(timeout 30 npm show @anthropic-ai/claude-code version 2>/dev/null) || LATEST_VER=""
     if [ -n "$LATEST_VER" ] && [ -n "$CURRENT_VER" ] && [ "$CURRENT_VER" != "$LATEST_VER" ]; then
         echo "[INFO] Updating Claude Code from $CURRENT_VER to $LATEST_VER..."
@@ -144,7 +146,16 @@ if [ "$AUTO_UPDATE" = "true" ]; then
         # that blocks `claude update` (which tries to update the npm global in /usr/local)
         timeout 300 npm install -g "@anthropic-ai/claude-code@$LATEST_VER" \
             --prefix "$NPM_GLOBAL_DIR" --no-fund --no-audit 2>&1 || true
-        echo "[INFO] Claude Code update complete: $(claude --version 2>/dev/null)"
+        hash -r 2>/dev/null || true
+        # Smoke test: a release that hangs or crashes on this hardware must not stick.
+        # Rolling back = removing the npm-global install so PATH falls through to the bundled binary.
+        if ! timeout 30 claude --version </dev/null >/dev/null 2>&1; then
+            echo "[WARN] Claude Code $LATEST_VER fails to run on this system — rolling back to bundled version"
+            rm -rf "$NPM_GLOBAL_DIR"
+            mkdir -p "$NPM_GLOBAL_DIR"
+            hash -r 2>/dev/null || true
+        fi
+        echo "[INFO] Claude Code update complete: $(timeout 30 claude --version 2>/dev/null)"
     else
         echo "[INFO] Claude Code $CURRENT_VER is up to date"
     fi
@@ -155,9 +166,9 @@ MODEL=$(jq -r --arg d claude-sonnet-4-6 '.model // $d' /data/options.json)
 export ANTHROPIC_MODEL="$MODEL"
 echo "[INFO] Using Claude model: $MODEL"
 
-# Configure MCP servers
-claude mcp remove homeassistant -s user 2>/dev/null || true
-claude mcp remove playwright -s user 2>/dev/null || true
+# Configure MCP servers (timeout: on AVX-less CPUs claude hangs — must not block ttyd startup)
+timeout 30 claude mcp remove homeassistant -s user 2>/dev/null || true
+timeout 30 claude mcp remove playwright -s user 2>/dev/null || true
 
 # Ensure settings.json exists so jq merges below work on fresh installs
 SETTINGS_FILE=/root/.claude/settings.json
@@ -172,7 +183,7 @@ if jq -e '.mcpServers.homeassistant.env.HASS_TOKEN?' "$SETTINGS_FILE" >/dev/null
 fi
 
 if [ "$ENABLE_MCP" = "true" ]; then
-    claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user || true
+    timeout 30 claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user || true
     ALLOWED_TOOLS='[
       "mcp__homeassistant__get_version",
       "mcp__homeassistant__get_entity",
@@ -203,11 +214,24 @@ fi
 if [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
     PW_CONFIG=$(jq -cn --arg url "http://${PLAYWRIGHT_HOST}:9222" \
         '{command:"npx",args:["--no-install","@playwright/mcp","--cdp-endpoint",$url]}')
-    claude mcp add-json playwright "$PW_CONFIG" -s user || true
+    timeout 30 claude mcp add-json playwright "$PW_CONFIG" -s user || true
     echo "[INFO] Playwright MCP enabled (CDP: http://${PLAYWRIGHT_HOST}:9222)"
     echo '[INFO] Make sure the Playwright Browser add-on is installed and running'
 else
     echo '[INFO] Playwright MCP disabled'
+fi
+
+# Remote Control — lets claude.ai/code and the Claude mobile app view and steer sessions.
+# Off by default: this add-on runs as root with full host access, so anyone signed in to
+# the linked Claude account could control it.
+REMOTE_CONTROL=$(jq -r '.enable_remote_control // false' /data/options.json)
+RC_SESSION_PREFIX=$(jq -r --arg d HomeAssistant '.remote_control_session_prefix // $d' /data/options.json)
+if [ "$REMOTE_CONTROL" = "true" ]; then
+    jq '.remoteControlAtStartup = true' "$SETTINGS_FILE" > /tmp/settings.tmp && mv /tmp/settings.tmp "$SETTINGS_FILE"
+    export CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX="$RC_SESSION_PREFIX"
+    echo '[INFO] Remote Control enabled — sessions can be steered from claude.ai'
+else
+    jq 'del(.remoteControlAtStartup)' "$SETTINGS_FILE" > /tmp/settings.tmp && mv /tmp/settings.tmp "$SETTINGS_FILE"
 fi
 
 # Set terminal colors based on theme
@@ -226,7 +250,7 @@ fi
 
 # Background update checker — runs hourly, posts HA notification when update is available
 (while true; do
-    IV=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    IV=$(timeout 30 claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     LV=$(npm show @anthropic-ai/claude-code version 2>/dev/null)
     if [ -n "$LV" ] && [ -n "$IV" ] && [ "$IV" != "$LV" ]; then
         echo "$LV" > "$PERSIST_DIR/.update_notice"

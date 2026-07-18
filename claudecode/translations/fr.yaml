@@ -1,0 +1,80 @@
+configuration:
+  enable_mcp:
+    name: Activer Home Assistant MCP
+    description: >-
+      Activez le serveur Home Assistant MCP pour l'interaction directe avec les
+      entités et les services à partir de Claude Code. Permet à Claude de
+      interroger les états, d'appeler des services et d'interagir avec votre
+      maison intelligente.
+  enable_playwright_mcp:
+    name: Activer Playwright MCP
+    description: >-
+      Activez le serveur Playwright MCP pour l'automatisation du navigateur.
+      Nécessite que le module complémentaire "Playwright Browser" soit installé
+      et en cours d'exécution. Permet à Claude de naviguer sur les pages web,
+      de remplir les formulaires, de cliquer sur les éléments et de prendre
+      des captures d'écran.
+  playwright_cdp_host:
+    name: Hôte Playwright CDP
+    description: >-
+      Nom d'hôte du module complémentaire Playwright Browser pour la connexion
+      CDP. Laissez vide pour le défaut (playwright-browser). Si la connexion
+      échoue, vérifiez le nom d'hôte du conteneur Playwright Browser
+      (par exemple, 1016f397-playwright-browser).
+  terminal_font_size:
+    name: Taille de la Police du Terminal
+    description: >-
+      Taille de la police pour le terminal web en pixels (10-24).
+      Ajustez pour une meilleure lisibilité sur votre affichage.
+  terminal_theme:
+    name: Thème du Terminal
+    description: >-
+      Thème de couleur pour le terminal web.
+      Choisissez « dark » pour les fonds sombres ou « light » pour les fonds clairs.
+  working_directory:
+    name: Répertoire de Travail
+    description: >-
+      Le répertoire de travail par défaut au démarrage de Claude Code.
+      Utilisez /homeassistant pour un accès direct aux fichiers de configuration HA.
+  session_persistence:
+    name: Persistance de Session
+    description: >-
+      Activez la persistance de la session tmux. Lorsqu'elle est activée, votre
+      session de terminal survit aux actualisations du navigateur et aux
+      déconnexions. Recommandé pour les tâches longues.
+  auto_update_claude:
+    name: Mise à Jour Automatique de Claude Code
+    description: >-
+      Vérifiez et installez automatiquement les mises à jour de Claude Code au
+      démarrage du module complémentaire. Garde Claude Code à jour sans nécessiter
+      de changements de version du module complémentaire.
+  enable_remote_control:
+    name: Activer le Contrôle à Distance
+    description: >-
+      Démarre automatiquement Claude Code avec le Contrôle à Distance activé pour
+      chaque session. Permet de visualiser et de piloter votre session locale de
+      Claude Code depuis claude.ai/code ou l'application mobile Claude. Nécessite
+      un abonnement claude.ai Pro, Max, Team ou Enterprise (les clés API ne sont
+      pas prises en charge). Note de sécurité : ce module s'exécute en tant que
+      root avec un accès complet à votre serveur Home Assistant ; toute personne
+      pouvant se connecter au compte Claude lié peut donc le contrôler. Laissez
+      cette option désactivée sauf si vous en avez besoin.
+  remote_control_session_prefix:
+    name: Préfixe du Nom de Session du Contrôle à Distance
+    description: >-
+      Préfixe des noms de session de Contrôle à Distance générés automatiquement,
+      visible dans claude.ai/code et l'application mobile Claude. La valeur par
+      défaut est « HomeAssistant », produisant des noms comme
+      « HomeAssistant-graceful-unicorn ». S'applique uniquement lorsque le
+      Contrôle à Distance est activé.
+  model:
+    name: Modèle Claude
+    description: >-
+      Le modèle Claude à utiliser. claude-sonnet-4-6 offre le meilleur équilibre
+      entre vitesse et capacité. claude-opus-4-7 est le plus puissant.
+      claude-haiku-4-5-20251001 est le plus rapide. La mise à jour automatique de
+      Claude Code (ci-dessus) garantit que les nouveaux modèles deviennent
+      disponibles sans mise à jour du module complémentaire.
+
+network:
+  7681/tcp: Terminal Web (ttyd)

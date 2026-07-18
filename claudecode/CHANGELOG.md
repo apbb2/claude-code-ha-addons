@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-07-18
+
+Integrates the worthwhile changes from the upstream repository (v1.2.64–1.2.65), which independently confirmed several of our earlier fixes and contributed new ones.
+
+### Added
+- **Remote Control** (community contribution by danvratil): new `enable_remote_control` option auto-starts every session with Claude Code Remote Control, so you can view and steer it from claude.ai/code or the Claude mobile app. `remote_control_session_prefix` sets the session name prefix. Off by default — see the README security note before enabling.
+- French translation (community contribution by Locodice67).
+
+### Fixed
+- On CPUs without AVX, Claude Code *hangs* rather than crashing — the startup sequence could block forever at the MCP configuration step and the terminal never came up. All startup `claude` invocations are now wrapped in timeouts, so the terminal always starts.
+- The CPU compatibility warning now checks for AVX (the actual requirement of Claude Code's runtime) instead of SSE4.2.
+- Auto-update and `claude update` now smoke-test the newly installed version and roll back to the bundled one if it fails to run — a broken or incompatible release can no longer stick.
+- playwright-browser add-on build was broken (`apt-get: not found`): the Supervisor's `build_from` regex silently rejected the Playwright base image reference (community contribution by sergiorademacher).
+
+### Changed
+- Binary downloads during image build now retry on transient failures; the ha CLI is pinned for reproducible builds.
+
 ## [3.1.0] - 2026-07-06
 
 ### Changed
