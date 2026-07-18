@@ -30,5 +30,6 @@ alias cc='claude --continue'
 alias ha-config='cd /homeassistant'
 alias ha-logs='cat /homeassistant/home-assistant.log 2>/dev/null || echo "Log not found"'
 alias claude-update='claude update'
+alias claude-url='cat /tmp/claude-last-url 2>/dev/null || echo "No URL captured yet — it appears here after Claude tries to open a browser"'
 
 source /root/.claude-notify.sh

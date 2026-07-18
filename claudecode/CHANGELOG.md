@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2026-07-18
+
+### Fixed
+- Claude login URLs are now delivered as a clickable link in a Home Assistant notification (bell icon). The container has no browser, so Claude Code's auto-open silently failed, and long OAuth URLs wrapped across terminal lines making them unclickable. A browser-open shim now catches the attempt, posts a notification with the link, and saves it for the new claude-url terminal command.
+- Stale login-link notifications are dismissed on add-on startup.
+
 ## [3.2.0] - 2026-07-18
 
 Integrates the worthwhile changes from the upstream repository (v1.2.64–1.2.65), which independently confirmed several of our earlier fixes and contributed new ones.

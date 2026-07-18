@@ -3,6 +3,10 @@ set -e
 
 export HA_TOKEN="$SUPERVISOR_TOKEN"
 export HA_URL="http://supervisor/core"
+# No browser in the container — route browser-open attempts (login URLs) to our
+# shim, which posts a clickable HA notification. Claude Code's opener falls back
+# to $BROWSER / xdg-open, both of which resolve to the shim.
+export BROWSER=/usr/local/bin/xdg-open
 PERSIST_DIR=/homeassistant/.claudecode
 NPM_GLOBAL_DIR="$PERSIST_DIR/npm-global"
 # Prepend writable npm prefix to PATH so any installed update takes priority over the image binary
@@ -247,6 +251,13 @@ if [ "$SESSION_PERSIST" = "true" ]; then
 else
     SHELL_CMD='bash --login'
 fi
+
+# Clear any stale open-URL notification from a previous session
+printf '{"notification_id":"claude_code_open_url"}' \
+    | curl -sf -X POST \
+      -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d @- http://supervisor/core/api/services/persistent_notification/dismiss >/dev/null 2>&1 || true
 
 # Background update checker — runs hourly, posts HA notification when update is available
 (while true; do

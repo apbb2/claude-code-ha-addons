@@ -170,9 +170,14 @@ tmux mouse mode is disabled, so the browser handles selection natively:
 
 #### Authenticating Claude Code (first launch)
 
-1. **Click the authentication link** — it should open in a new tab (on narrow windows the URL may wrap; if clicking doesn't work, select and copy it into your browser)
-2. Complete authentication in the browser and **copy the auth code**
-3. Click back on the terminal and **paste** the code
+When Claude Code tries to open the login page, the add-on delivers the link to your **Home Assistant notifications** (the 🔔 bell icon in the sidebar) — the container itself has no browser to open.
+
+1. Start `claude` and choose the login method
+2. Open the **notification bell** and click the login link
+3. Complete authentication in the browser and **copy the auth code**
+4. Return to the terminal and **paste** the code
+
+Fallbacks if the notification doesn't appear: run `claude-url` in the terminal to print the captured URL, or select and copy the URL from Claude's own output (it may wrap across lines — select all of it).
 
 ### Session Persistence Trade-offs
 
