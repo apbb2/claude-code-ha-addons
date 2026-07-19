@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.2] - 2026-07-18
+
+### Fixed
+- Login broke after 3.2.1: the browser-open shim made Claude Code believe a browser opened locally, switching it to a localhost-callback OAuth flow that can never complete from the user's real browser (redirect_uri pointed inside the container). The shim is removed — Claude Code again uses the manual paste-a-code flow.
+- Login URLs are now captured passively instead: a background watcher reads the tmux screen with wrapped lines joined, detects the OAuth URL exactly as displayed, and posts it as a clickable HA notification. Claude Code's login flow is never touched.
+
 ## [3.2.1] - 2026-07-18
 
 ### Fixed

@@ -3,10 +3,11 @@ set -e
 
 export HA_TOKEN="$SUPERVISOR_TOKEN"
 export HA_URL="http://supervisor/core"
-# No browser in the container — route browser-open attempts (login URLs) to our
-# shim, which posts a clickable HA notification. Claude Code's opener falls back
-# to $BROWSER / xdg-open, both of which resolve to the shim.
-export BROWSER=/usr/local/bin/xdg-open
+# NOTE: do NOT install an xdg-open/$BROWSER shim. When Claude Code believes a
+# browser opened locally it switches to a localhost-callback OAuth flow that can
+# never complete from the user's real browser. With no opener present, it
+# correctly uses the manual paste-a-code flow. Login URLs are captured
+# passively by the tmux watcher below instead.
 PERSIST_DIR=/homeassistant/.claudecode
 NPM_GLOBAL_DIR="$PERSIST_DIR/npm-global"
 # Prepend writable npm prefix to PATH so any installed update takes priority over the image binary
@@ -258,6 +259,32 @@ printf '{"notification_id":"claude_code_open_url"}' \
       -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
       -H "Content-Type: application/json" \
       -d @- http://supervisor/core/api/services/persistent_notification/dismiss >/dev/null 2>&1 || true
+
+# Background login-URL watcher — reads the tmux pane with wrapped lines joined
+# (capture-pane -J) and posts any Claude OAuth URL as a clickable HA notification.
+# Purely passive: Claude Code's login flow is not touched.
+if [ "$SESSION_PERSIST" = "true" ]; then
+(LAST_URL=""
+while true; do
+    if tmux has-session -t claude 2>/dev/null; then
+        URL=$(tmux capture-pane -t claude -p -J -S -80 2>/dev/null \
+              | grep -oE 'https://claude\.(ai|com)/[^[:space:]]*oauth[^[:space:]]*' | tail -1)
+        if [ -n "$URL" ] && [ "$URL" != "$LAST_URL" ]; then
+            LAST_URL="$URL"
+            printf '%s\n' "$URL" > /tmp/claude-last-url
+            jq -cn --arg url "$URL" '{
+                title: "Claude Code — login link",
+                message: ("[**Click here to open the login page**](" + $url + ")\n\nAfter approving, copy the code and paste it back into the terminal."),
+                notification_id: "claude_code_open_url"
+            }' | curl -sf -X POST \
+                -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d @- http://supervisor/core/api/services/persistent_notification/create >/dev/null 2>&1 || true
+        fi
+    fi
+    sleep 3
+done) &
+fi
 
 # Background update checker — runs hourly, posts HA notification when update is available
 (while true; do
