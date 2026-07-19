@@ -47,17 +47,21 @@ sed -n "/## \[$VERSION\]/,/^## \[/p" "$CHANGELOG" | sed '$d'
 
 git add "$CONFIG" "$CHANGELOG"
 git commit -m "v$VERSION: $1"
-git push
 
-# Users can only install once the GHCR images exist — block until CI is green
+# Build images from a staging branch FIRST. HA only reads main, so users never
+# see a version whose images don't exist yet (they'd get pull errors).
+echo "Pushing to release branch for image build..."
+git push --force origin HEAD:refs/heads/release
+
 echo "Waiting for image build (GitHub Actions)..."
 sleep 10
-RUN_ID=$(gh run list --workflow=builder.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+RUN_ID=$(gh run list --workflow=builder.yaml --branch release --limit 1 --json databaseId --jq '.[0].databaseId')
 if gh run watch "$RUN_ID" --exit-status; then
-    echo "CI green — v$VERSION images are live on ghcr.io. Released ($TODAY)."
+    echo "CI green — v$VERSION images are live on ghcr.io. Publishing to main..."
+    git push
+    echo "Released v$VERSION ($TODAY)."
 else
-    echo "CI FAILED — v$VERSION is pushed but images are NOT published." >&2
-    echo "Users who update now will get a pull error. Fix the build, then re-run:" >&2
-    echo "  gh run rerun $RUN_ID   (or push a fix commit)" >&2
+    echo "CI FAILED — v$VERSION was NOT published (main is untouched, users unaffected)." >&2
+    echo "Fix the build, then re-run: ./release.sh (images rebuild from the release branch)" >&2
     exit 1
 fi

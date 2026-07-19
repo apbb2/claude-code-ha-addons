@@ -187,6 +187,13 @@ if jq -e '.mcpServers.homeassistant.env.HASS_TOKEN?' "$SETTINGS_FILE" >/dev/null
     echo '[INFO] Removed legacy token from persisted settings'
 fi
 
+# Remove obsolete Glob()/Grep() permission rules written by older versions —
+# Claude Code warns about them at startup; Read(path) rules cover those tools.
+jq '.permissions.allow = ((.permissions.allow // []) - [
+        "Glob(/homeassistant/**)", "Glob(/config/**)",
+        "Grep(/homeassistant/**)", "Grep(/config/**)"
+    ])' "$SETTINGS_FILE" > /tmp/settings.tmp && mv /tmp/settings.tmp "$SETTINGS_FILE"
+
 if [ "$ENABLE_MCP" = "true" ]; then
     timeout 30 claude mcp add-json homeassistant '{"command":"hass-mcp"}' -s user || true
     ALLOWED_TOOLS='[
@@ -201,11 +208,7 @@ if [ "$ENABLE_MCP" = "true" ]; then
       "Read(/homeassistant/**)",
       "Read(/config/**)",
       "Read(/share/**)",
-      "Read(/media/**)",
-      "Glob(/homeassistant/**)",
-      "Glob(/config/**)",
-      "Grep(/homeassistant/**)",
-      "Grep(/config/**)"
+      "Read(/media/**)"
     ]'
     jq --argjson tools "$ALLOWED_TOOLS" \
         '.permissions.allow = ($tools + (.permissions.allow // []) | unique)' \

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.3] - 2026-07-18
+
+### Fixed
+- Startup warnings from Claude Code about invalid permission rules: obsolete Glob() and Grep() allow-rules are no longer written to settings.json, and stale ones from earlier versions are removed on startup (Read() rules already cover those tools).
+- Release pipeline: versions are now published to users only after their images are fully built — updating can no longer hit a window where the image doesn't exist yet.
+
 ## [3.2.2] - 2026-07-18
 
 ### Fixed
