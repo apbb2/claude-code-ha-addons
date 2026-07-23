@@ -11,13 +11,19 @@ claude() {
             --prefix /homeassistant/.claudecode/npm-global \
             --no-fund --no-audit 2>&1
         hash -r 2>/dev/null
-        if ! timeout 30 command claude --version </dev/null >/dev/null 2>&1; then
+        # Smoke-test the newly installed binary by explicit path. Do NOT wrap the
+        # `command` builtin in `timeout` — timeout can only exec real programs and
+        # would fail 127, rolling back every update regardless of whether it works.
+        newbin=/homeassistant/.claudecode/npm-global/bin/claude
+        if [ -x "$newbin" ] && timeout 30 "$newbin" --version </dev/null >/dev/null 2>&1; then
+            echo "Done: $("$newbin" --version 2>/dev/null)"
+        else
             echo "Updated version fails to run on this system — rolling back to bundled version"
             rm -rf /homeassistant/.claudecode/npm-global
             mkdir -p /homeassistant/.claudecode/npm-global
             hash -r 2>/dev/null
+            echo "Now using bundled: $(command claude --version 2>/dev/null)"
         fi
-        echo "Done: $(timeout 30 command claude --version 2>/dev/null)"
         return 0
     fi
     command claude "$@"

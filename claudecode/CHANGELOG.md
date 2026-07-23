@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.4] - 2026-07-23
+
+### Fixed
+- claude update always rolled back with 'Updated version fails to run on this system', even on fully compatible hardware. The smoke test wrapped the shell builtin 'command' in 'timeout', which can only exec real programs — so it exited 127 (failure) on every run, discarding every update. The test now runs the freshly installed binary by its explicit path. The startup auto-updater was never affected.
+
 ## [3.2.3] - 2026-07-18
 
 ### Fixed
